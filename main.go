@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
+	"crypto/ecdsa"
 	"embed"
 	"flag"
 	"fmt"
 	"io/fs"
 	"log"
+	"math/big"
 	"math/rand"
 	"net/http"
 	"os"
@@ -18,7 +21,12 @@ import (
 	"github.com/philippgille/gokv"
 	"github.com/philippgille/gokv/file"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+
+	nftlink "github.com/nicocesar/nftlink/lib/contracts/nftlink"
 )
 
 type ClaimPrize struct {
@@ -65,14 +73,102 @@ func (worker *worker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// let's mint a NFT and give it to the wallet
-	//!!
+	client, err := ethclient.Dial("http://localhost:8545")
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+	// TODO:let's mint a NFT and give it to the wallet
+	//
+	nftAddress := common.HexToAddress("0x5FbDB2315678afecb367f032d93F642f64180aa3")
+	nftcontract, err := nftlink.NewNFTLink(nftAddress, client)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	privateKey, err := crypto.HexToECDSA("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+
+	//Now we can read the nonce that we should use for the account's transaction.
+
+	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	chainID, err := client.NetworkID(context.Background())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	// TODO: get this from config
+	value := big.NewInt(0)              // in wei (0 eth)
+	gasLimit := uint64(30000)           // in units
+	gasPrice := big.NewInt(30000000000) // in wei (30 gwei)
+
+	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	opts := &bind.TransactOpts{
+		Nonce:    new(big.Int).SetUint64(nonce),
+		From:     fromAddress,
+		Signer:   auth.Signer,
+		Value:    value,
+		GasPrice: gasPrice,
+		GasLimit: gasLimit,
+	}
+	// FIXME! Safe mint should point to the IPFS metadata of the NFT
+	rtn_tx, err := nftcontract.NFTLinkTransactor.SafeMint(opts, A.Address(), "")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	b, err := rtn_tx.MarshalJSON()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, "%s", b)
 
 	// prize has been claimed now let's write it to the database
 	val := ClaimPrize{UUID: key, Wallet: wallet, Claimed: true}
 	err = worker.store.Set(key, val)
 	if err != nil {
-		panic(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
 	}
 
 }
