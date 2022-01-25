@@ -1,20 +1,27 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"embed"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
+	"io/ioutil"
 	"log"
 	"math/big"
 	"math/rand"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/gorilla/mux"
+
+	"github.com/spf13/viper"
 
 	_ "net/http/pprof"
 
@@ -41,6 +48,81 @@ var content embed.FS
 
 type worker struct {
 	store gokv.Store
+	ipfs  IIPFSClient
+}
+
+type InfuraIpfsClient struct {
+	ProjectID     string
+	ProjectSecret string
+	EndPoint      string
+}
+
+// Will return a client with this project id and secret for infura
+func NewInfuraIpfsClient(projectID string, projectSecret string) (*InfuraIpfsClient, error) {
+	new := &InfuraIpfsClient{
+		ProjectID:     projectID,
+		ProjectSecret: projectSecret,
+		EndPoint:      "https://ipfs.infura.io:5001",
+	}
+	return new, nil
+}
+
+type IPFSUploadResponse struct {
+	Hash string `json:"Hash"`
+	Name string `json:"Name"`
+	Size int64  `json:"Size"`
+}
+
+func (c *InfuraIpfsClient) Add(input io.Reader) (IPFSUploadResponse, error) {
+	body := new(bytes.Buffer)
+	mp := multipart.NewWriter(body)
+	defer mp.Close()
+
+	part1, err := mp.CreateFormFile("file", "file")
+	io.Copy(part1, input)
+	if err != nil {
+		return IPFSUploadResponse{}, err
+	}
+
+	request, err := http.NewRequest("POST", c.EndPoint+"/api/v0/add", body)
+	request.Header.Add("Content-Type", mp.FormDataContentType())
+
+	request.SetBasicAuth(c.ProjectID, c.ProjectSecret)
+	if err != nil {
+		return IPFSUploadResponse{}, err
+	}
+
+	//request.Header.Add("Content-Type", writer.FormDataContentType())
+	client := &http.Client{}
+
+	response, err := client.Do(request)
+
+	if err != nil {
+		return IPFSUploadResponse{}, err
+	}
+	defer response.Body.Close()
+
+	content, err := ioutil.ReadAll(response.Body)
+
+	if err != nil {
+		return IPFSUploadResponse{}, err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return IPFSUploadResponse{}, fmt.Errorf("%s", content)
+	}
+
+	// maybe a different name will be better?
+	IPFSUploadResponse := IPFSUploadResponse{}
+	json.Unmarshal(content, &IPFSUploadResponse)
+	if err != nil {
+		return IPFSUploadResponse, fmt.Errorf("error unmarshalling '%s': %e", content, err)
+	}
+	return IPFSUploadResponse, nil
+}
+
+type IIPFSClient interface {
+	Add(input io.Reader) (IPFSUploadResponse, error)
 }
 
 func (worker *worker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -75,16 +157,15 @@ func (worker *worker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client, err := ethclient.Dial("http://localhost:8545")
+	client, err := ethclient.Dial(viper.GetString("ethereum_client"))
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%v", err)
 		return
 	}
-	// TODO:let's mint a NFT and give it to the wallet
-	//
-	nftAddress := common.HexToAddress("0x5FbDB2315678afecb367f032d93F642f64180aa3")
+
+	nftAddress := common.HexToAddress(viper.GetString("contract_address"))
 	nftcontract, err := nftlink.NewNFTLink(nftAddress, client)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -92,7 +173,7 @@ func (worker *worker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	privateKey, err := crypto.HexToECDSA("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+	privateKey, err := crypto.HexToECDSA(viper.GetString("private_key"))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%v", err)
@@ -126,9 +207,9 @@ func (worker *worker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: get this from config
-	value := big.NewInt(0)              // in wei (0 eth)
-	gasLimit := uint64(30000)           // in units
-	gasPrice := big.NewInt(30000000000) // in wei (30 gwei)
+	value := big.NewInt(0)                                           // in wei (0 eth)
+	gasLimit := uint64(viper.GetInt32("gas_limit"))                  // in units
+	gasPrice := big.NewInt(viper.GetInt64("gas_price") * 1000000000) // in wei (30 gwei)
 
 	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
 	if err != nil {
@@ -146,7 +227,72 @@ func (worker *worker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		GasLimit: gasLimit,
 	}
 	// FIXME! Safe mint should point to the IPFS metadata of the NFT
-	rtn_tx, err := nftcontract.NFTLinkTransactor.SafeMint(opts, A.Address(), "")
+	type Attribute struct {
+		TraitType   string `json:"trait_type"`
+		DisplayType string `json:"display_type,omitempty"`
+		Value       string `json:"value"`
+	}
+
+	type Metadata struct {
+		Name        string      `json:"name"`
+		Description string      `json:"description"`
+		Image       string      `json:"image"`
+		Attributes  []Attribute `json:"attributes"`
+	}
+
+	number, err := nftcontract.NFTLinkCaller.Count(nil)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	metadata := Metadata{
+		Name:        "Ma'hai #" + number.String(),
+		Description: "Ma'hai #" + number.String(),
+		Image:       "ipfs://QmWCsTr7EiVFpDsWkogrm7qidu2t7jHkiYVueCWCwD7ZA5",
+		Attributes: []Attribute{
+			{
+				TraitType: "Producto",
+				Value:     "London Dry Gin",
+			},
+			{
+				TraitType: "Lote",
+				Value:     "202112R",
+			},
+			{
+				TraitType: "Partida",
+				Value:     "840 botellas",
+			},
+			{
+				TraitType: "Fabricado en",
+				Value:     "Coronel Vidal, Buenos Aires, Argentina",
+			},
+			{
+				TraitType:   "Fecha de produccion",
+				DisplayType: "date",
+				Value:       "1638421200",
+			},
+		},
+	}
+
+	metadataJson, err := json.Marshal(metadata)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	cid, err := worker.ipfs.Add(strings.NewReader(string(metadataJson)))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	log.Printf("metadata hash: %s", cid.Hash)
+
+	rtn_tx, err := nftcontract.NFTLinkTransactor.SafeMint(opts, A.Address(), fmt.Sprintf("ipfs://%s", cid.Hash))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%v", err)
@@ -175,13 +321,12 @@ func (worker *worker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// RandomString returns a random string of the given length.
+// RandomString returns a random string of the given length. For now,
 // this is *deterministic* and safe for use in tests and dev.
-// in production, replace this for a proper random function
-// maybe from the database?
 func RandomString(n int) string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-
+	// if you want to make it non-deterministic uncomment the below line
+	// rand.Seed(time.Now().UnixNano())
 	s := make([]rune, n)
 	for i := range s {
 		s[i] = letters[rand.Intn(len(letters))]
@@ -217,16 +362,35 @@ func (worker *checker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 var initFlag = flag.Bool("init", false, "initialize the database")
 
 func main() {
-	flag.Parse()
-	options := file.DefaultOptions //
+	viper.SetConfigName("config")         // name of config file (without extension)
+	viper.SetConfigType("yaml")           // REQUIRED if the config file does not have the extension in the name
+	viper.AddConfigPath("/etc/nftlink/")  // path to look for the config file in
+	viper.AddConfigPath("$HOME/.nftlink") // call multiple times to add many search paths
+	viper.AddConfigPath(".")              // optionally look for config in the working directory
+	err := viper.ReadInConfig()           // Find and read the config file
+	if err != nil {                       // Handle errors reading the config file
+		panic(fmt.Errorf("fatal error config file: %w", err))
+	}
+	viper.SetEnvPrefix("nftlink") // will be uppercased automatically
+	viper.BindEnv("contract_address")
+	viper.BindEnv("private_key")
+	viper.BindEnv("gas_limit")
+	viper.BindEnv("gas_price")
+	viper.BindEnv("infura_project_id")
+	viper.BindEnv("infura_project_secret")
 
-	// Create client
+	flag.Parse()
+
+	// Initialize the database or store.
+	// this database wwill have the list of (reedemed) codes
+	options := file.DefaultOptions // change as necesary
 	store, err := file.NewStore(options)
 	if err != nil {
 		panic(err)
 	}
 	defer store.Close()
 
+	// Populate the database with some random data if init flag is set
 	if initFlag != nil && *initFlag {
 		// Initialize the store
 		for i := 0; i < 10; i++ {
@@ -238,10 +402,15 @@ func main() {
 			}
 		}
 	}
+	// Setup the IPFS client
 
+	ipfs, err := NewInfuraIpfsClient(viper.GetString("infura_project_id"), viper.GetString("infura_project_secret"))
+	if err != nil {
+		panic(err)
+	}
 	r := mux.NewRouter()
 
-	minter := &worker{store: store}
+	minter := &worker{store: store, ipfs: ipfs}
 	r.Handle("/mint/{id}/{wallet}", minter)
 
 	checker := &checker{store: store}
