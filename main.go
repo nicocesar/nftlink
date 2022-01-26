@@ -251,6 +251,7 @@ func (worker *worker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Name:        "Ma'hai #" + number.String(),
 		Description: "Ma'hai #" + number.String(),
 		Image:       "ipfs://QmWCsTr7EiVFpDsWkogrm7qidu2t7jHkiYVueCWCwD7ZA5",
+		//Image: "ipfs://QmcxSwJ5PhYSArq1s1RS6Dt7Ji1m8YrDRQKPdt6Apizosw/mahai.jpeg",
 		Attributes: []Attribute{
 			{
 				TraitType: "Producto",
@@ -292,7 +293,7 @@ func (worker *worker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("metadata hash: %s", cid.Hash)
 
-	rtn_tx, err := nftcontract.NFTLinkTransactor.SafeMint(opts, A.Address(), fmt.Sprintf("ipfs://%s", cid.Hash))
+	rtn_tx, err := nftcontract.NFTLinkTransactor.SafeMint(opts, A.Address(), cid.Hash)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%v", err)
