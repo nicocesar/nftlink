@@ -25,8 +25,8 @@ COPY web/ /app/web/
 ## BENCHMARK between having go:embed and files in docker container.
 WORKDIR /app
 COPY *.go /app/
-COPY ./config /app/config/
-RUN go test
+#COPY ./config /app/config/
+#RUN go test
 RUN GOOS=linux GOARCH=amd64 go build -a -ldflags '-s' --installsuffix cgo -mod=readonly -o nftlink
 RUN ls -lh /app/config
 
