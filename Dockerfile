@@ -16,11 +16,11 @@ RUN go mod download
 
 ## test+compile the web app
 COPY web/ /app/web/
-WORKDIR /app/web
-RUN yarn install
+#WORKDIR /app/web
+#RUN yarn install
 ## yarn needs --watchAll=false otherwise it gets stuck with watchman for some reason with docker
-RUN yarn test --watchAll=false
-RUN yarn build 
+#RUN yarn test --watchAll=false
+#RUN yarn build 
 
 ## BENCHMARK between having go:embed and files in docker container.
 WORKDIR /app
@@ -33,7 +33,7 @@ RUN ls -lh /app/config
 
 FROM scratch
 COPY --from=build-env /app/nftlink /nftlink
-COPY --from=build-env /app/config/ /config/
+#COPY --from=build-env /app/config /config/
 ## TODO: BENCHMARK between having go:embed and files in docker container.
 COPY --from=build-env /app/web/build/ /web/build/ 
 ## Certificate are needed for https to magic.link
