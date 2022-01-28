@@ -370,7 +370,7 @@ func main() {
 	viper.AddConfigPath(".")              // optionally look for config in the working directory
 	err := viper.ReadInConfig()           // Find and read the config file
 	if err != nil {                       // Handle errors reading the config file
-		panic(fmt.Errorf("fatal error config file: %w", err))
+		fmt.Printf("fatal error config file: %s", err)
 	}
 	viper.SetEnvPrefix("nftlink") // will be uppercased automatically
 	viper.BindEnv("contract_address")
