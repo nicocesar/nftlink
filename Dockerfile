@@ -3,7 +3,7 @@ FROM node:15.12.0-alpine3.13 as build-env
 ENV CGO_ENABLED=0
 # Important env variables: DB_URL PORT GO_ENV GRAPHQL_URI
 RUN apk add gcompat
-COPY --from=golang:1.16-alpine /usr/local/go/ /usr/local/go/
+COPY --from=golang:1.17-alpine /usr/local/go/ /usr/local/go/
  
 ENV PATH="/usr/local/go/bin:${PATH}"
 
