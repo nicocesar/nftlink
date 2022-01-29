@@ -26,7 +26,8 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/philippgille/gokv"
-	"github.com/philippgille/gokv/file"
+	"github.com/philippgille/gokv/datastore"
+	"github.com/philippgille/gokv/encoding"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -60,7 +61,7 @@ type InfuraIpfsClient struct {
 // Will return a client with this project id and secret for infura
 func NewInfuraIpfsClient(projectID string, projectSecret string) (*InfuraIpfsClient, error) {
 	new := &InfuraIpfsClient{
-		ProjectID:     projectID,
+		ProjectID:     viper.GetString("datastore_project_id"),
 		ProjectSecret: projectSecret,
 		EndPoint:      "https://ipfs.infura.io:5001",
 	}
@@ -384,8 +385,13 @@ func main() {
 
 	// Initialize the database or store.
 	// this database wwill have the list of (reedemed) codes
-	options := file.DefaultOptions // change as necesary
-	store, err := file.NewStore(options)
+	//options := file.DefaultOptions // change as necesary
+	options := datastore.Options{
+		ProjectID:       "qrcodenft",
+		CredentialsFile: "",
+		Codec:           encoding.JSON,
+	}
+	store, err := datastore.NewClient(options)
 	if err != nil {
 		panic(err)
 	}
@@ -394,7 +400,7 @@ func main() {
 	// Populate the database with some random data if init flag is set
 	if initFlag != nil && *initFlag {
 		// Initialize the store
-		for i := 0; i < 10; i++ {
+		for i := 0; i < 1000; i++ {
 			key := RandomString(10)
 			val := ClaimPrize{UUID: key, Claimed: false}
 			err := store.Set(key, val)
