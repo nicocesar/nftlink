@@ -1,4 +1,4 @@
-FROM node:17.4.0-alpine3.15 as build-env
+FROM node:16.13.2-alpine3.15 as build-env
 
 ENV CGO_ENABLED=0
 # Important env variables: DB_URL PORT GO_ENV GRAPHQL_URI

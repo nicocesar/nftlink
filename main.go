@@ -452,8 +452,7 @@ func fileServer(router *mux.Router, endpoint string, rootFS fs.FS, root string) 
 
 	relocatedFS := http.FS(strippedFS)
 	staticHandler := http.FileServer(relocatedFS)
-
-	router.HandleFunc(endpoint, func(w http.ResponseWriter, r *http.Request) {
+	router.PathPrefix(endpoint).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		if _, err := relocatedFS.Open(r.RequestURI); err != nil {
 			// the file is not there...
