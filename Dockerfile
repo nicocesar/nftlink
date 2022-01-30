@@ -16,11 +16,11 @@ RUN go mod download
 
 ## test+compile the web app
 COPY web/ /app/web/
-#WORKDIR /app/web
-#RUN yarn install
+WORKDIR /app/web
+RUN yarn install
 ## yarn needs --watchAll=false otherwise it gets stuck with watchman for some reason with docker
 #RUN yarn test --watchAll=false
-#RUN yarn build 
+RUN yarn build 
 
 ## BENCHMARK between having go:embed and files in docker container.
 WORKDIR /app
