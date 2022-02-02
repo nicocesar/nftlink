@@ -323,12 +323,10 @@ func (worker *worker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// RandomString returns a random string of the given length. For now,
-// this is *deterministic* and safe for use in tests and dev.
+// RandomString returns a random string of the given length.
 func RandomString(n int) string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	// if you want to make it non-deterministic uncomment the below line
-	// rand.Seed(time.Now().UnixNano())
+	 rand.Seed(time.Now().UnixNano())
 	s := make([]rune, n)
 	for i := range s {
 		s[i] = letters[rand.Intn(len(letters))]
