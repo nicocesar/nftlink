@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
     "target": "es5",
+    "baseUrl": "./",
+    "outDir": "./dist",
     "lib": [
       "dom",
       "dom.iterable",
@@ -18,7 +20,13 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "removeComments": true,
+    "noImplicitReturns": true,
+    "sourceMap": true,
+    "incremental": true,
+    "experimentalDecorators": true,
+    "declaration": true
   },
   "include": [
     "src"
