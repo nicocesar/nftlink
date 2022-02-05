@@ -1,7 +1,6 @@
-import React, { FC, Fragment, ReactNode, useState } from "react";
+import React, { Fragment } from "react";
 import { Popover, Transition } from '@headlessui/react'
 import connectWallet from '../components/ConnectWallet'
-import {useAuth} from '../components/AuthProvider'
 
 const navigation = [
   { name: 'Product', href: '#' },
@@ -10,7 +9,6 @@ const navigation = [
 
 
 const Home: React.FC = (): JSX.Element => {
-  const { getConnectedWalletAddress } = useAuth();
   return (
     <>
      <div className="relative bg-white overflow-hidden">
@@ -31,13 +29,12 @@ const Home: React.FC = (): JSX.Element => {
               <nav className="relative flex items-center justify-between sm:h-10 lg:justify-start" aria-label="Global">
                 <div className="flex items-center flex-grow flex-shrink-0 lg:flex-grow-0">
                   <div className="flex items-center justify-between w-full md:w-auto">
-                    <a href="#">
-                      <span className="sr-only">Workflow</span>
-                      <img
-                        className="h-8 w-auto sm:h-10 rounded-full"
-                        src="https://img.freepik.com/free-vector/gradient-metaverse-background_23-2149263788.jpg?size=626&ext=jpg"
-                      />
-                    </a>
+                    <span className="sr-only">Workflow</span>
+                    <img
+                      className="h-8 w-auto sm:h-10 rounded-full"
+                      src="https://img.freepik.com/free-vector/gradient-metaverse-background_23-2149263788.jpg?size=626&ext=jpg"
+                      alt="NFT metaverse access page"
+                    />
                   </div>
                 </div>
                 <div className="hidden md:block md:ml-10 md:pr-4 md:space-x-8">

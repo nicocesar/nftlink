@@ -2,7 +2,7 @@ import React from "react";
 import { useAuth } from "src/components/AuthProvider";
 
 const ConnectWallet = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    const { getConnectedWalletAddress, updateWalletAddress } = useAuth();
+    const { updateWalletAddress } = useAuth();
     try {
       const { ethereum } = window;
 

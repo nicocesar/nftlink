@@ -1,4 +1,4 @@
-import React, {useState, SetStateAction} from "react";
+import React, { useState } from "react";
 
 const AuthContext = React.createContext({
   token: "",
@@ -15,10 +15,6 @@ const fakeAuth = () =>
 
 interface Props {
   children?: JSX.Element | JSX.Element[];
-}
-
-interface ProtectedRouteProps {
-  children: JSX.Element | null;
 }
 
 const useAuth = () => {

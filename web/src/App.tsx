@@ -10,7 +10,8 @@ declare global {
     }
 }
 
-let FB = window.ethereum;
+//let FB = window.ethereum;
+//FB = FB;
 
 const App: React.FC = (): JSX.Element => {
 
