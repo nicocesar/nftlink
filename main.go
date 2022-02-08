@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 
@@ -326,7 +327,7 @@ func (worker *worker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // RandomString returns a random string of the given length.
 func RandomString(n int) string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	 rand.Seed(time.Now().UnixNano())
+	rand.Seed(time.Now().UnixNano())
 	s := make([]rune, n)
 	for i := range s {
 		s[i] = letters[rand.Intn(len(letters))]
