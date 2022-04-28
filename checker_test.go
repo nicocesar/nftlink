@@ -9,19 +9,19 @@ import (
 	"github.com/philippgille/gokv/syncmap"
 )
 
-type testCase struct {
-	name           string
-	uuid           string
-	claimed        bool
-	wallet         string
-	method         string
-	url            string
-	expectedStatus int
-	expectedBody   string
-}
 
 func TestChecker(t *testing.T) {
-	cases := []testCase{
+	var cases = []struct {
+		name           string
+		uuid           string
+		claimed        bool
+		wallet         string
+		method         string
+		url            string
+		expectedStatus int
+		expectedBody   string
+	}
+	{
 		{"Unredeemed code", "U6fxRAqxMo", false, "", "GET", "/check/U6fxRAqxMo", http.StatusOK, `Redeem code U6fxRAqxMo found`},
 		{"Redeemed code", "U6fxRAqxMo", true, "", "GET", "/check/U6fxRAqxMo", http.StatusOK, `Redeem code U6fxRAqxMo found`},
 		{"Reedemed code not found", "", true, "", "GET", "/check/notfound12", http.StatusNotFound, `Redeem code notfound12 not found`},
