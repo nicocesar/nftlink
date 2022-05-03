@@ -2,8 +2,9 @@ import React, { useState } from "react";
 
 const AuthContext = React.createContext({
   token: "",
-  getConnectedWalletAddress: () => {},
-  updateWalletAddress: (value:string) => {},
+  connectWallet: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {},
+  onGetConnectedWalletAddress: () => {},
+  onUpdateWalletAddress: (value:string) => {},
   onLogin: () => { },
   onLogout: () => { },
 });
@@ -34,21 +35,41 @@ const AuthProvider = ({ children }: Props) => {
         setToken("");
     };
 
-    const updateWalletAddress = (value:string) =>{
+    const updateWalletAddress = async (value:string) =>{
         setCurrentAccount(value);
     }
 
-    const getConnectedWalletAddress = () => {
+    const getConnectedWalletAddress = async () => {
         return currentAccount;
     }
 
+    const connectWallet = async (event: React.MouseEvent<HTMLButtonElement>) => {
+        try {
+          const { ethereum } = window;
+
+          if (!ethereum) {
+            alert("Get MetaMask!");
+            return;
+          }
+
+          const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+
+          console.log("Connected", accounts[0]);
+          updateWalletAddress(accounts[0]);
+        } catch (error) {
+          console.log(error)
+        }
+      }
+
     const value = {
         token,
-        getConnectedWalletAddress,
-        updateWalletAddress,
+        connectWallet,
+        onGetConnectedWalletAddress : getConnectedWalletAddress,
+        onUpdateWalletAddress : updateWalletAddress,
         onLogin: handleLogin,
         onLogout: handleLogout,
     };
+
 
 
     return (

@@ -3,6 +3,7 @@ import { useRoutes } from 'react-router-dom';
 import Home from "./containers/Home";
 import Metaverse from './containers/Metaverse'
 import NoMatch from './components/NoMatch'
+import Welcome from "./containers/Welcome";
 
 declare global {
     interface Window {
@@ -16,7 +17,8 @@ declare global {
 const App: React.FC = (): JSX.Element => {
 
   const mainRoutes = [
-  { path: '/', element: <Home />},
+  { path: '/', element: <Welcome />},
+  { path: '/home', element: <Home />},
   { path: '/metaverse', element: <Metaverse />},
   { path: '/*', element: <NoMatch />},
   ];

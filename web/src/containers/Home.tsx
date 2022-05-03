@@ -1,6 +1,6 @@
 import React, { Fragment } from "react";
 import { Popover, Transition } from '@headlessui/react'
-import connectWallet from '../components/ConnectWallet'
+import { useAuth } from "src/components/AuthProvider";
 
 const navigation = [
   { name: 'Product', href: '#' },
@@ -9,6 +9,7 @@ const navigation = [
 
 
 const Home: React.FC = (): JSX.Element => {
+  const { connectWallet } = useAuth();
   return (
     <>
      <div className="relative bg-white overflow-hidden">

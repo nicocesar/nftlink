@@ -497,6 +497,8 @@ github.com/philippgille/gokv/datastore v0.6.0 h1:J34+p6NtX05Na8zRaWLJPgrQc+iFD3B
 github.com/philippgille/gokv/datastore v0.6.0/go.mod h1:/5Qa/1cCHtSGj97EAjiQILcQhkDqrjdWPyNnbdox6Lo=
 github.com/philippgille/gokv/encoding v0.0.0-20191011213304-eb77f15b9c61 h1:IgQDuUPuEFVf22mBskeCLAtvd5c9XiiJG2UYud6eGHI=
 github.com/philippgille/gokv/encoding v0.0.0-20191011213304-eb77f15b9c61/go.mod h1:SjxSrCoeYrYn85oTtroyG1ePY8aE72nvLQlw8IYwAN8=
+github.com/philippgille/gokv/syncmap v0.6.0 h1:2eWC2J6mTyUsl687WuGoYPIiyqFiTBZU7hSKPlr0mK4=
+github.com/philippgille/gokv/syncmap v0.6.0/go.mod h1:ZekkiO1XY9XbjRv9iunxA6+POW9Tw/QHsLO9xAHEaxo=
 github.com/philippgille/gokv/test v0.0.0-20191011213304-eb77f15b9c61 h1:4tVyBgfpK0NSqu7tNZTwYfC/pbyWUR2y+O7mxEg5BTQ=
 github.com/philippgille/gokv/test v0.0.0-20191011213304-eb77f15b9c61/go.mod h1:EUc+s9ONc1+VOr9NUEd8S0YbGRrQd/gz/p+2tvwt12s=
 github.com/philippgille/gokv/util v0.0.0-20191011213304-eb77f15b9c61 h1:ril/jI0JgXNjPWwDkvcRxlZ09kgHXV2349xChjbsQ4o=

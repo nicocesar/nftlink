@@ -3,7 +3,7 @@ import { useAuth } from "src/components/AuthProvider";
 
 
 const CheckIfWalletIsConnected = async (currentAccountProp:string):Promise<void> => {
-    const { getConnectedWalletAddress, updateWalletAddress} = useAuth();
+    const { onGetConnectedWalletAddress, onUpdateWalletAddress} = useAuth();
     try {
         const { ethereum } = window;
 
