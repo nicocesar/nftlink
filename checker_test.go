@@ -24,6 +24,7 @@ func TestChecker(t *testing.T) {
 		{"Redeemed code", "U6fxRAqxMo", true, "", "GET", "/check/U6fxRAqxMo", http.StatusOK, `Redeem code U6fxRAqxMo found`},
 		{"Unreedemed code not found", "", false, "", "GET", "/check/notfound12", http.StatusNotFound, `Redeem code notfound12 not found`},
 		{"Reedemed code not found", "", true, "", "GET", "/check/notfound12", http.StatusNotFound, `Redeem code notfound12 not found`},
+		{"POST method also valid", "U6fxRAqxMo", false, "", "POST", "/check/U6fxRAqxMo", http.StatusOK, `Redeem code U6fxRAqxMo found`},
 	}
 
 	for _, tc := range cases {
