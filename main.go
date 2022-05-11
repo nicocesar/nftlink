@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"math/big"
 	"math/rand"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gorilla/mux"
 
 	"github.com/spf13/viper"
@@ -99,8 +101,21 @@ func main() {
 	}
 	r := mux.NewRouter()
 
-	minter := &worker{store: store, ipfs: ipfs}
-	r.Handle("/mint/{id}/{wallet}", minter)
+	client, err := ethclient.Dial(viper.GetString("ethereum_client"))
+	if err != nil {
+		panic(err)
+	}
+
+	m := &minter{
+		store:           store,
+		ipfs:            ipfs,
+		client:          client,
+		privateKey:      viper.GetString("private_key"),
+		contractAddress: viper.GetString("contract_address"),
+		gasLimit:        uint64(viper.GetInt32("gas_limit")),
+		gasPrice:        big.NewInt(viper.GetInt64("gas_price") * 1000000000),
+	}
+	r.Handle("/mint/{id}/{wallet}", m)
 
 	checker := &checker{store: store}
 	r.Handle("/check/{id}", checker)
