@@ -27,7 +27,7 @@ WORKDIR /app
 COPY *.go /app/
 COPY ./lib /app/lib/
 #COPY ./config /app/config/
-#RUN go test
+RUN go test
 RUN GOOS=linux GOARCH=amd64 go build -a -ldflags '-s' --installsuffix cgo -mod=readonly -o nftlink
 
 
