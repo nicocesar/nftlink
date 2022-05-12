@@ -9,10 +9,6 @@ const Welcome: React.FC = (): JSX.Element => {
   const [response, setResponse] = useState<number>();
   const navigate = useNavigate();
 
-  function timeout(delay: number) {
-    return new Promise( res => setTimeout(res, delay) );
-  }
-
   const goHome = async () => {
     navigate('/home')
   };
