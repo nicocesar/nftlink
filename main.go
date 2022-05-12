@@ -64,6 +64,7 @@ func main() {
 	viper.BindEnv("gas_price")
 	viper.BindEnv("infura_project_id")
 	viper.BindEnv("infura_project_secret")
+	viper.BindEnv("ethereum_client")
 
 	flag.Parse()
 
