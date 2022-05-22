@@ -45,7 +45,7 @@ const Welcome: React.FC = (): JSX.Element => {
                 </button>
               </>
               }
-              {response === 201 &&
+              {response === 404 &&
                 <ItemNotAvailable/>
               }
             </div>
