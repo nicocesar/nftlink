@@ -2,11 +2,14 @@ import React, { useEffect, useState } from "react";
 import {useNavigate} from 'react-router-dom';
 import ItemAvailable from "./ItemAvailable";
 import ItemNotAvailable from "./ItemNotAvailable";
+import { useAuth } from "src/components/AuthProvider";
 
 const Welcome: React.FC = (): JSX.Element => {
+  const { setUuid } = useAuth();
   const params = new URLSearchParams(window.location.search);
   const paramValue = params.get("uuid");
   const [response, setResponse] = useState<number>();
+  setUuid(paramValue || "{}");
   const navigate = useNavigate();
 
   const goHome = async () => {
@@ -45,7 +48,7 @@ const Welcome: React.FC = (): JSX.Element => {
                 </button>
               </>
               }
-              {response === 201 &&
+              {response === 404 &&
                 <ItemNotAvailable/>
               }
             </div>
