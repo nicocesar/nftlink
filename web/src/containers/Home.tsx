@@ -1,6 +1,6 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect} from "react";
 import { Popover, Transition } from '@headlessui/react'
-import { useAuth } from "src/components/AuthProvider";
+import { useAuth, isMobileDevice} from "src/components/AuthProvider";
 
 const navigation = [
   { name: 'Product', href: '#' },
@@ -9,7 +9,14 @@ const navigation = [
 
 
 const Home: React.FC = (): JSX.Element => {
-  const { connectWallet } = useAuth();
+  const { connectWallet, connectWalletMobile, metamaskAppDeepLink, getUuid} = useAuth();
+
+  useEffect(() => {
+    if (isMobileDevice()){
+      connectWalletMobile();
+    }
+  }, []);
+
   return (
     <>
      <div className="relative bg-white overflow-hidden">
@@ -99,9 +106,18 @@ const Home: React.FC = (): JSX.Element => {
               </p>
               <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                 <div className="rounded-md shadow">
-                  <button onClick={connectWallet} className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 md:py-4 md:text-lg md:px-10" name="button 1">
-                    Connect Metamask
-                  </button>
+                  {isMobileDevice() ? (
+                    <a href={metamaskAppDeepLink + getUuid()}>
+                        <button className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 md:py-4 md:text-lg md:px-10" name="button 1">
+                          Connect Metamask Mobile
+                        </button>
+                    </a>
+                  ) : (
+                    <button onClick={connectWallet} className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 md:py-4 md:text-lg md:px-10" name="button 1">
+                      Connect Metamask
+                    </button>
+                  )
+                  }
                 </div>
                 <div className="mt-3 sm:mt-0 sm:ml-3">
                   <button onClick={connectWallet} className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 md:py-4 md:text-lg md:px-10" name="button 1">
