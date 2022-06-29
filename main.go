@@ -5,12 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
+	"io/ioutil"
 	"log"
 	"math/big"
 	"math/rand"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -30,8 +30,10 @@ type ClaimPrize struct {
 	Wallet  string `json:"wallet"` // saving the wallet just in case the request to the blockchain fails, this dies process dies and we need to retry
 }
 
-// content holds our static web server content.
-//go:embed web/build
+// content holds our static web server content. needs "all:" prefix for files starting with "." and "_" as in __layout.svelte
+// this means that we need go 1.18 to compile it
+//
+//go:embed all:web/build
 var content embed.FS
 
 // RandomString returns a random string of the given length.
@@ -125,7 +127,8 @@ func main() {
 	r.Handle("/debug/pprof/profile", http.DefaultServeMux)
 	r.Handle("/debug/pprof/heap", http.DefaultServeMux)
 
-	fileServer(r, "/", content, "web/build")
+	fileServerStatic(r, "/_app/immutable/", content, "web/build")
+	fileServerCatchAll(r, "/", content, "web/build/index.html", "text/html")
 
 	// Determine port for HTTP service.
 	port := os.Getenv("PORT")
@@ -140,8 +143,27 @@ func main() {
 	}
 }
 
+func GetFileContentType(ouput *os.File) (string, error) {
+
+	// to sniff the content type only the first
+	// 512 bytes are used.
+
+	buf := make([]byte, 512)
+
+	_, err := ouput.Read(buf)
+
+	if err != nil {
+		return "", err
+	}
+
+	// the function that actually does the trick
+	contentType := http.DetectContentType(buf)
+
+	return contentType, nil
+}
+
 // FileServer is serving static files.
-func fileServer(router *mux.Router, endpoint string, rootFS fs.FS, root string) {
+func fileServerStatic(router *mux.Router, endpoint string, rootFS fs.FS, root string) {
 	// Strip the "web/build" prefix, or whatever root is
 	strippedFS, err := fs.Sub(rootFS, root)
 	if err != nil {
@@ -149,17 +171,37 @@ func fileServer(router *mux.Router, endpoint string, rootFS fs.FS, root string) 
 	}
 
 	relocatedFS := http.FS(strippedFS)
-	staticHandler := http.FileServer(relocatedFS)
-	router.PathPrefix(endpoint).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router.PathPrefix(endpoint).Handler(http.FileServer(relocatedFS))
+}
 
-		if _, err := relocatedFS.Open(r.RequestURI); err != nil {
-			// the file is not there...
-			uriWithoutQuery := strings.Split(r.RequestURI, "?")[0]
-			v := http.StripPrefix(uriWithoutQuery, staticHandler)
-			v.ServeHTTP(w, r)
-		} else {
-			// the file is there (most likely static content), just server it...
-			staticHandler.ServeHTTP(w, r)
+func fileServerCatchAll(router *mux.Router, endpoint string, rootFS fs.FS, catchallfile string, contentType string) {
+
+	router.PathPrefix(endpoint).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get the file name from the URL
+		fileName := catchallfile
+
+		// Open the file
+		fmt.Printf("warning: serving %s for request %s\n", fileName, r.URL.Path)
+		file, err := rootFS.Open(fileName)
+		if err != nil {
+			log.Printf("error1: %s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
+		defer file.Close()
+
+		// Read the content into memory
+		fileBytes, err := ioutil.ReadAll(file)
+		if err != nil {
+			log.Printf("error2: %s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Write content-type header
+		w.Header().Set("Content-Type", contentType)
+
+		// Write content to response
+		w.Write(fileBytes)
 	})
 }
