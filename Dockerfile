@@ -10,7 +10,7 @@ ENV PATH="/usr/local/go/bin:${PATH}"
 
 RUN mkdir /app
 # do this first to improve layer catching with go mod (save us ~200s on development cycle)
-COPY go.mod go.sum /app/ 
+COPY go.mod go.sum /app/
 WORKDIR /app
 RUN go mod download
 

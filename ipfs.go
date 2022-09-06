@@ -8,8 +8,6 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-
-	"github.com/spf13/viper"
 )
 
 type InfuraIpfsClient struct {
@@ -21,7 +19,7 @@ type InfuraIpfsClient struct {
 // Will return a client with this project id and secret for infura
 func NewInfuraIpfsClient(projectID string, projectSecret string) (*InfuraIpfsClient, error) {
 	new := &InfuraIpfsClient{
-		ProjectID:     viper.GetString("datastore_project_id"),
+		ProjectID:     projectID,
 		ProjectSecret: projectSecret,
 		EndPoint:      "https://ipfs.infura.io:5001",
 	}

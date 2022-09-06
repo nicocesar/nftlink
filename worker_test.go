@@ -55,7 +55,7 @@ func TestWorker(t *testing.T) {
 		expectedStatus     int
 		expectedBodyRegexp string
 	}{
-		{"Unredeemed code", "U6fxRAqxMo", false, "0x", "GET", "/mint/U6fxRAqxMo/0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B", http.StatusOK, `'input': '0xd204c45e000000000000000000000000ab5801a7d398351b8be11c439e05c5b3259aec9b00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000'`},
+		{"Unredeemed code", "U6fxRAqxMo", false, "0x", "GET", "/mint/U6fxRAqxMo/0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B", http.StatusOK, `"status":"success"`},
 		{"Unredeemed code invalid wallet", "U6fxRAqxMo", false, "0x", "GET", "/mint/U6fxRAqxMo/0x123456", http.StatusBadRequest, `Invalid wallet address`},
 		{"Already redeemed", "U6fxRAqxMo", true, "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B", "GET", "/mint/U6fxRAqxMo/0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B", http.StatusOK, `Already claimed`},
 		{"Redeem code not found", "U6fxRAqxMo", false, "0x", "GET", "/mint/not_found/0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B", http.StatusNotFound, `Redeem code not_found not found`},
@@ -161,8 +161,8 @@ func TestWorker(t *testing.T) {
 			}
 
 			// Check the response body is what we expect.
-			_, err = regexp.MatchString(tc.expectedBodyRegexp, rr.Body.String())
-			if err != nil {
+			match, err := regexp.MatchString(tc.expectedBodyRegexp, rr.Body.String())
+			if err != nil || !match {
 				t.Errorf("handler can't match regexp '%v' in body '%v'",
 					tc.expectedBodyRegexp, rr.Body.String())
 			}

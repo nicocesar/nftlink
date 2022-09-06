@@ -4,4 +4,4 @@
 
 
 
-<div> empty page! you need to have a link to redeem your NFT!</div>
+<div id="main-text">Oops empty page! you need to have a link to redeem your NFT!</div>

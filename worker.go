@@ -35,6 +35,81 @@ type minter struct {
 	gasPrice        *big.Int
 }
 
+type minterResponse struct {
+	Status          string `json:"status"` // success or error
+	TxHash          string `json:"txHash"`
+	ChainID         string `json:"chainID"`
+	ContractAddress string `json:"contractAddress"`
+	TokenID         string `json:"tokenID"`
+	ExplorerURL     string `json:"etherscanURL"`
+	OpenSeaURL      string `json:"openSeaURL"`
+}
+
+func getEtherscanURL(chainID string, contractAddress string, tokenID string) string {
+	if chainID == "1" {
+		return fmt.Sprintf("https://etherscan.io/token/%s?a=%s", contractAddress, tokenID)
+	}
+	if chainID == "3" {
+		return fmt.Sprintf("https://ropsten.etherscan.io/token/%s?a=%s", contractAddress, tokenID)
+	}
+	if chainID == "4" {
+		return fmt.Sprintf("https://rinkeby.etherscan.io/token/%s?a=%s", contractAddress, tokenID)
+	}
+	if chainID == "42" {
+		return fmt.Sprintf("https://kovan.etherscan.io/token/%s?a=%s", contractAddress, tokenID)
+	}
+	if chainID == "5" {
+		return fmt.Sprintf("https://goerli.etherscan.io/token/%s?a=%s", contractAddress, tokenID)
+	}
+	if chainID == "6" {
+		return fmt.Sprintf("https://sokol.etherscan.io/token/%s?a=%s", contractAddress, tokenID)
+	}
+	if chainID == "7" {
+		return fmt.Sprintf("https://xdai.etherscan.io/token/%s?a=%s", contractAddress, tokenID)
+	}
+	if chainID == "137" {
+		return fmt.Sprintf("https://polygonscan.com/token/%s?a=%s", contractAddress, tokenID)
+	}
+	if chainID == "80001" {
+		return fmt.Sprintf("https://mumbai.polygonscan.com/token/%s?a=%s", contractAddress, tokenID)
+	}
+	if chainID == "1337" { // for testing
+		return fmt.Sprintf("https://localtest.etherscan.io/token/%s?a=%s", contractAddress, tokenID)
+	}
+	return ""
+}
+
+func getOpenSeaURL(chainID string, contractAddress string, tokenID string) string {
+	if chainID == "1" {
+		return fmt.Sprintf("https://opensea.io/assets/ethereum/%s/%s", contractAddress, tokenID)
+	}
+	if chainID == "4" {
+		return fmt.Sprintf("https://testnets.opensea.io/assets/rinkeby/%s/%s", contractAddress, tokenID)
+	}
+	if chainID == "42" {
+		return fmt.Sprintf("https://testnets.opensea.io/assets/kovan/%s/%s", contractAddress, tokenID)
+	}
+	if chainID == "5" {
+		return fmt.Sprintf("https://testnets.opensea.io/assets/goerli/%s/%s", contractAddress, tokenID)
+	}
+	if chainID == "6" {
+		return fmt.Sprintf("https://testnets.opensea.io/assets/sokol/%s/%s", contractAddress, tokenID)
+	}
+	if chainID == "7" {
+		return fmt.Sprintf("https://testnets.opensea.io/assets/xdai/%s/%s", contractAddress, tokenID)
+	}
+	if chainID == "80001" {
+		return fmt.Sprintf("https://testnets.opensea.io/assets/mumbai/%s/%s", contractAddress, tokenID)
+	}
+	if chainID == "137" {
+		return fmt.Sprintf("https://opensea.io/assets/matic/%s/%s", contractAddress, tokenID)
+	}
+	if chainID == "1337" { // for testing
+		return fmt.Sprintf("https://testnets.opensea.io/assets/localtest/%s/%s", contractAddress, tokenID)
+	}
+	return ""
+}
+
 func (m *minter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["id"]
@@ -212,7 +287,17 @@ func (m *minter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	b, err := rtn_tx.MarshalJSON()
+	response := minterResponse{
+		Status:          "success",
+		TxHash:          rtn_tx.Hash().Hex(),
+		ChainID:         rtn_tx.ChainId().Text(10),
+		ContractAddress: rtn_tx.To().Hex(),
+		TokenID:         number.String(),
+		ExplorerURL:     getEtherscanURL(rtn_tx.ChainId().String(), rtn_tx.To().Hex(), number.String()),
+		OpenSeaURL:      getOpenSeaURL(rtn_tx.ChainId().String(), rtn_tx.To().Hex(), number.String()),
+	}
+
+	b, err := json.Marshal(response)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%v", err)
